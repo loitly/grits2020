@@ -1,0 +1,42 @@
+# allow kube-guest to list the namespaces at the cluster level, but nothing else
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: irsakudev-sandbox
+subjects:
+  - kind: User
+    name: irsakudev-sandbox
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: namespace-list
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ns-admin
+  namespace: sandbox
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: irsakudev-sandbox
+  namespace: sandbox
+subjects:
+  - kind: User
+    name: irsakudev-sandbox
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: ns-admin
+  apiGroup: rbac.authorization.k8s.io

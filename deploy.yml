@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # The name of the deployment
+  name: grits-loi
+  namespace: sandbox
+  labels:
+    # label placed on the Deployment
+    app: grits-loi
+spec:
+  # defines how the Deployment finds which Pods to manage   (*)
+  selector:
+    matchLabels:
+      app: grits-loi
+  # number of Pod or instances to create
+  replicas: 2
+  template:
+    metadata:
+      # label placed on the Pod                             (*)
+      labels:
+        app: grits-loi
+    spec:
+      containers:
+        - name: grits-loi
+          image: httpd:2.4
+          # always pull the image for updates
+          imagePullPolicy: Always
+          resources:
+            # limit the Pod to 64MB of RAM
+            limits:
+              memory: "64Mi"
+          # port to listen on
+          ports:
+            - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  # name of the service.  will be referenced by Ingress.    (**)
+  name: grits-loi
+  namespace: sandbox
+spec:
+  # route requests to any Pod with the app=grits-loi label     (*)
+  selector:
+    app: grits-loi
+  type: ClusterIP
+  ports:
+    - name: grits-loi
+      protocol: TCP
+      port: 80
+
+---
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: grits-loi
+  namespace: sandbox
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  tls:
+  - hosts:
+    - irsakudevlb1.ipac.caltech.edu
+    secretName: irsaku-ssl-cert
+  rules:
+    - host: irsakudevlb1.ipac.caltech.edu
+      http:
+        paths:
+          - path: /grits/loi(/|$)(.*)
+            backend:
+              # route requests to grits-loi service.    (**)
+              serviceName: grits-loi
+              servicePort: 80
